@@ -7,14 +7,14 @@ import EvaluatorWrapperClasses._
 
 object Parser extends RegexParsers {
   type ContextualBooleanFunction  = (A) => Boolean
-  //type BooleanFunction = () => Boolean
 
   def always : Parser[ContextualBooleanFunction]    = "always()" ^^ { x => anything => true }
   def equals : Parser[ContextualBooleanFunction]     = """equals(""" ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ { x => 
       x match {
         case _ ~ keypath ~ _ ~ literal  ~ _ => {
-          val a : (A) => Boolean = implicit a => KeypathLookup.lookup(keypath, a) equals literal
-          a
+          a => {
+            KeypathLookup.lookup(keypath, a) equals literal
+          }
         }
       }
   }
@@ -25,19 +25,31 @@ object Parser extends RegexParsers {
   // def contains: Parser[ComparisonBooleanFunction]            = """contains("""       ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ { _.toString }
   def and: Parser[ContextualBooleanFunction] = """and(""" ~ (comparisonExpression | operatorExpression) ~ "," ~ (comparisonExpression | operatorExpression) ~ ")" ^^ { 
     case _ ~ booleanFunctionLeft ~ _ ~ booleanFunctionRight ~ _ => {
-      println(booleanFunctionLeft)
-      println(booleanFunctionRight)
-
-      // booleanFunctionLeft && booleanFunctionRight
-
-      (x) => true
+      (a) => booleanFunctionLeft(a) && booleanFunctionRight(a)
     }
   }
-  // def or: Parser[String]                  = """or(""" ^^ { _.toString }
-  // def not: Parser[String]                 = """not(""" ^^ { _.toString }
-  def keypath : Parser[String]            = """'[a-z\.]+'""".r ^^ { _.toString }
+
+  def or: Parser[ContextualBooleanFunction] = """or(""" ~ (comparisonExpression | operatorExpression) ~ "," ~ (comparisonExpression | operatorExpression) ~ ")" ^^ { 
+    case _ ~ booleanFunctionLeft ~ _ ~ booleanFunctionRight ~ _ => {
+      (a) => booleanFunctionLeft(a) || booleanFunctionRight(a)
+    }
+  }
+  
+  def not: Parser[ContextualBooleanFunction] = """not(""" ~ (comparisonExpression | operatorExpression) ~ ")" ^^ { 
+    case _ ~ booleanFunction ~ _ => {
+      (a) => !booleanFunction(a)
+    }
+  }
+
+  def keypath : Parser[String]            = (("'" ~ """[_0-9A-Za-z\.]+""".r ~ "'") | ( "\"" ~ """[_0-9A-Za-z\.]+""".r  ~ "\"" )) ^^ { 
+    case _ ~ keypath ~  _ => keypath
+  }
+
   def longLiteral : Parser[Long]          = """[0-9]+""".r ^^ { _.toLong }
-  def stringLiteral : Parser[String]      = """'[^\']+'""".r | """\"[^\"]+\"""".r //" trick to get sublime text highlighting to work properly
+
+  def stringLiteral : Parser[String]      = (("'" ~ """[^\']+""".r ~ "'") | ( "\"" ~ """[^\"]+""".r  ~ "\"" )) ^^ { 
+    case _ ~ stringLiteral ~  _ => stringLiteral
+  } 
   def booleanLiteral : Parser[Boolean]    = ("true" | "false") ^^ { trueOrFalseString => if (trueOrFalseString == "true") true else false }
   
   def comparisonExpression : Parser[ContextualBooleanFunction]   = (
@@ -48,12 +60,10 @@ object Parser extends RegexParsers {
     // lessThanOrEqual |
     // contains
     )
-  def operatorExpression : Parser[ContextualBooleanFunction] = and //| or | not
-  def expression = operatorExpression | comparisonExpression | always
+  def operatorExpression : Parser[ContextualBooleanFunction] = and | or | not
+  def expressionRoot = operatorExpression | comparisonExpression | always
 
-  def parse(stringToParse: String)        = parseAll(expression, stringToParse)
+  def parse(stringToParse: String)        = parseAll(expressionRoot, stringToParse)
 
-  // def number: Parser[Int]    = """(0|[1-9]\d*)""".r ^^ { _.toInt }
-  // def freq: Parser[WordFreq] = word ~ number        ^^ { case wd ~ fr => WordFreq(wd,fr) }
 } 
 
