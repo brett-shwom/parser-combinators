@@ -8,6 +8,10 @@ object EvaluatorWrapperClasses {
 	*/
 
 	sealed abstract class Comparable(value : Any) {
+
+		//TODO: perhaps equals, greaterThan etc. return a function which has no pattern matching in it...this way we don't have to evaluate the case statements
+		// each time we call equals(), greaterThan()  etc.
+
 		def equals(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
 
 			(this, other) match {
@@ -24,6 +28,84 @@ object EvaluatorWrapperClasses {
 				case (ComparableSeqString(thisValue), ComparableSeqString(otherValue)) => thisValue equals otherValue
 
 				case (ComparableSeqBoolean(thisValue), ComparableSeqBoolean(otherValue)) => thisValue equals otherValue
+
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+		def greaterThan(other : Comparable /*TODO: maybe the type should be ComparableOptionLong*/) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
+
+			(this, other) match {
+				
+				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue > otherValue 
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+		def greaterThanOrEqual(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
+
+			(this, other) match {
+				
+				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue >= otherValue 
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+
+		def lessThan(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
+
+			(this, other) match {
+				
+				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue < otherValue 
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+		def lessThanOrEqual(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
+
+			(this, other) match {
+				
+				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue <= otherValue 
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+		def contains(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
+
+			(this, other) match {
+				
+				//note, contains will only return true if the OptionX is Some...
+
+				case (ComparableSeqLong(thisValue), ComparableOptionLong(Some(otherValue))) => thisValue contains otherValue
+
+				case (ComparableSeqString(thisValue), ComparableOptionString(Some(otherValue))) => thisValue contains otherValue
+
+				case (ComparableSeqBoolean(thisValue), ComparableOptionBoolean(Some(otherValue))) => thisValue contains otherValue
 
 				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
 

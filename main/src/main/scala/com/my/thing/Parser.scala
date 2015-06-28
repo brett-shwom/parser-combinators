@@ -17,23 +17,56 @@ object Parser extends RegexParsers {
       }
       
   }
-  // def greaterThan: Parser[ContextualBooleanFunction]         = """greaterThan("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
-  //     _ match {
-  //       case _ ~ keypath ~ _ ~ literal  ~ _ => {
-  //         a => {
-  //           // val result = KeypathLookup.lookup(keypath, a) equals literal
-  //           // val lookupResult = KeypathLookup.lookup(keypath, a).getClass
-  //           // val literalClass = literal.getClass
-  //           // println(s"$literal $literalClass $lookupResult $result")
-  //           KeypathLookup.lookup(keypath, a) > literal
-  //         }
-  //       }
-  //     }
-  // }
-  // def greaterThanOrEqual: Parser[ContextualBooleanFunction]  = """greaterThanOrEqual("""     ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { _.toString }
-  // def lessThan: Parser[ContextualBooleanFunction]            = """lessThan("""     ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { _.toString }
-  // def lessThanOrEqual: Parser[ContextualBooleanFunction]     = """lessThanOrEqual("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { _.toString }
-  // def contains: Parser[ContextualBooleanFunction]            = """contains("""       ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ { _.toString }
+  def greaterThan: Parser[ContextualBooleanFunction]         = """greaterThan("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+      _ match {
+        case _ ~ keypath ~ _ ~ literal  ~ _ => {
+          a => {
+            KeypathLookup.lookup(keypath, a) greaterThan literal
+          }
+        }
+      }
+  }
+
+  def greaterThanOrEqual: Parser[ContextualBooleanFunction]         = """greaterThanOrEqual("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => {
+          KeypathLookup.lookup(keypath, a) greaterThanOrEqual literal
+        }
+      }
+    }
+  }
+
+  def lessThan: Parser[ContextualBooleanFunction]         = """lessThan("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => {
+          KeypathLookup.lookup(keypath, a) lessThan literal
+        }
+      }
+    }
+  }
+
+  def lessThanOrEqual: Parser[ContextualBooleanFunction]         = """lessThanOrEqual("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => {
+          KeypathLookup.lookup(keypath, a) lessThanOrEqual literal
+        }
+      }
+    }
+  }
+
+  def contains: Parser[ContextualBooleanFunction]         = """contains("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => {
+          KeypathLookup.lookup(keypath, a) contains literal
+        }
+      }
+    }
+  }
+
   def and: Parser[ContextualBooleanFunction] = """and(""" ~ (comparisonExpression | operatorExpression) ~ "," ~ (comparisonExpression | operatorExpression) ~ ")" ^^ { 
     case _ ~ booleanFunctionLeft ~ _ ~ booleanFunctionRight ~ _ => {
       (a) => booleanFunctionLeft(a) && booleanFunctionRight(a)
@@ -64,12 +97,12 @@ object Parser extends RegexParsers {
   def booleanLiteral : Parser[ComparableOptionBoolean]    = ("true" | "false") ^^ { trueOrFalseString => if (trueOrFalseString == "true") ComparableOptionBoolean(Some(true)) else ComparableOptionBoolean(Some(false)) }
   
   def comparisonExpression : Parser[ContextualBooleanFunction]   = (
-    equals //| 
-    // greaterThan | 
-    // greaterThanOrEqual |
-    // lessThan |
-    // lessThanOrEqual |
-    // contains
+    equals | 
+    greaterThan | 
+    greaterThanOrEqual |
+    lessThan |
+    lessThanOrEqual |
+    contains
     )
   def operatorExpression : Parser[ContextualBooleanFunction] = and | or | not
   def expressionRoot = operatorExpression | comparisonExpression | always
