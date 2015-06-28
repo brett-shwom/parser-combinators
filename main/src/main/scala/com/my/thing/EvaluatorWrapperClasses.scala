@@ -2,21 +2,73 @@ package com.my.thing
 
 object EvaluatorWrapperClasses {
 
-	sealed abstract class Comparable(value : Any)
+	/* Wrapper classes which :
+		1) restrict the types that are allowed to be involved in a comparison
+		2) allow for custom comparison behaviors when comparisons between different types occur
+	*/
 
-	case class ComparableString(value : String) extends Comparable(value)
-	case class ComparableInt(value : Int) extends Comparable(value)
-	case class ComparableLong(value : Long) extends Comparable(value)
-	case class ComparableBoolean(value : Boolean) extends Comparable(value)
+	sealed abstract class Comparable(value : Any) {
+		def equals(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
 
-	//TODO: should we have support for float?
+			println ("I AM UP HERE")
+			println(this)
+			println(other)
+			(this, other) match {
+
+				case (ComparableOptionString(Some(thisValue)), ComparableOptionString(Some(otherValue))) => thisValue equals otherValue 
+				
+				// case (ComparableOptionInt(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => {
+				// 	println("I AM HERE")
+				// 	println(thisValue.getClass)
+				// 	println(otherValue.getClass)
+				// 	println(thisValue equals otherValue )
+				// 	thisValue equals otherValue
+				// }
+				// case (ComparableOptionLong(Some(thisValue)), ComparableOptionInt(Some(otherValue))) => {
+				// 	println("I AM HERE")
+				// 	println(thisValue equals otherValue )
+				// 	thisValue equals otherValue 
+				// }
+
+				//case (ComparableOptionInt(Some(thisValue)), ComparableOptionInt(Some(otherValue))) => thisValue equals otherValue 
+				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue equals otherValue 
+
+				case (ComparableOptionBoolean(Some(thisValue)), ComparableOptionBoolean(Some(otherValue))) => thisValue equals otherValue
+
+
+
+				// case (ComparableSeqLong(thisValue), ComparableSeqInt(otherValue)) => thisValue equals otherValue
+				// case (ComparableSeqInt(thisValue), ComparableSeqLong(otherValue)) => thisValue equals otherValue
+
+				//case (ComparableSeqInt(thisValue), ComparableSeqInt(otherValue)) => thisValue equals otherValue
+				case (ComparableSeqLong(thisValue), ComparableSeqLong(otherValue)) => thisValue equals otherValue
+
+				case (ComparableSeqString(thisValue), ComparableSeqString(otherValue)) => thisValue equals otherValue
+
+				case (ComparableSeqBoolean(thisValue), ComparableSeqBoolean(otherValue)) => thisValue equals otherValue
+
+				case (_, _) => false //default rule, maybe we should distinguish between false and invalid comparisons?
+
+				//TODO: should ComparableUndefined(_) equal ComparableUndefined(_) ?
+
+			}
+
+		}
+
+
+	}
+
+
+	// //TODO: should we have support for float?
+
+	//options only for primitives, makes it a bit easier to reason about the comparisons
 
 	case class ComparableOptionString(value : Option[String]) extends Comparable(value)
-	case class ComparableOptionInt(value : Option[Int]) extends Comparable(value)
+	//case class ComparableOptionInt(value : Option[Int]) extends Comparable(value)
 	case class ComparableOptionLong(value : Option[Long]) extends Comparable(value)
 	case class ComparableOptionBoolean(value : Option[Boolean]) extends Comparable(value)
 
-	case class ComparableSeqInt(value : Seq[Int]) extends Comparable(value)
+	//case class ComparableSeqInt(value : Seq[Int]) extends Comparable(value)
 	case class ComparableSeqLong(value : Seq[Long]) extends Comparable(value)
 	case class ComparableSeqString(value : Seq[String]) extends Comparable(value)
 	case class ComparableSeqBoolean(value : Seq[Boolean]) extends Comparable(value)
@@ -25,45 +77,92 @@ object EvaluatorWrapperClasses {
 
 }
 
-object EvaluatorWrapperClassesConversions {
+object EvaluatorWrapperConverters {
 
 	import EvaluatorWrapperClasses._
 
-	implicit def comparableStringWrapper(s: String) = 
-		new ComparableString(s)
+	implicit def toComparableStringConverter(s:String) = new ComparableStringConverter(s)
 
-	implicit def comparableIntWrapper(i: Int) = 
-		new ComparableInt(i)
+	class ComparableStringConverter(s : String) {
+		def asComparable = new ComparableOptionString(Some(s))
+	}
 
-	implicit def ComparableLongWrapper(l: Long) = 
-		new ComparableLong(l)
+	implicit def toComparableOptionStringConverter(s:Option[String]) = new ComparableOptionStringConverter(s)
 
-	implicit def ComparableBooleanWrapper(b: Boolean) = 
-		new ComparableBoolean(b)
-
-
-	implicit def comparableOptionStringWrapper(so: Option[String]) = 
-		new ComparableOptionString(so)
-
-	implicit def comparableOptionIntWrapper(ii: Option[Int]) = 
-		new ComparableOptionInt(ii)
-
-	implicit def ComparableOptionLongWrapper(ll: Option[Long]) = 
-		new ComparableOptionLong(ll)
-
-	implicit def ComparableOptionBooleanWrapper(bb: Option[Boolean]) = 
-		new ComparableOptionBoolean(bb)
+	class ComparableOptionStringConverter(s : Option[String]) {
+		def asComparable = new ComparableOptionString(s)
+	}
 
 
-	implicit def ComparableSeqStringWrapper(ss: Seq[String]) = 
-		new ComparableSeqString(ss)
+	implicit def toComparableIntConverter(i: Int) = new ComparableIntConverter(i)
 
-	implicit def ComparableSeqIntWrapper(si: Seq[Int]) = 
-		new ComparableSeqInt(si)
+	class ComparableIntConverter(i : Int) {
+		def asComparable = new ComparableOptionLong(Some(i.asInstanceOf[Long])) //convert the int to long - might be an expensive operation TODO: look into optimizing ex: lazy conversion etc.
+	}
 
-	implicit def ComparableSeqLongWrapper(sl: Seq[Long]) = 
-		new ComparableSeqLong(sl)
+	implicit def toComparableOptionIntConverter(i:Option[Int]) = new ComparableOptionIntConverter(i)
 
-	implicit def ComparableSeqBooleanWrapper(sb: Seq[Boolean]) = 
-		new ComparableSeqBoolean(sb)
+	class ComparableOptionIntConverter(i : Option[Int]) {
+		def asComparable = new ComparableOptionLong(i.asInstanceOf[Option[Long]]) // convert int to long
+	}
+
+
+	implicit def toComparableLongConverter(l:Long) = new ComparableLongConverter(l)
+
+	class ComparableLongConverter(l : Long) {
+		def asComparable = new ComparableOptionLong(Some(l))
+	}
+
+	implicit def toComparableOptionLongConverter(l:Option[Long]) = new ComparableOptionLongConverter(l)
+
+	class ComparableOptionLongConverter(l : Option[Long]) {
+		def asComparable = new ComparableOptionLong(l)
+	}
+
+
+	implicit def toComparableBooleanConverter(b:Boolean) = new ComparableBooleanConverter(b)
+
+	class ComparableBooleanConverter(b : Boolean) {
+		def asComparable = new ComparableOptionBoolean(Some(b))
+	}
+
+	implicit def toComparableOptionBooleanConverter(b:Option[Boolean]) = new ComparableOptionBooleanConverter(b)
+
+	class ComparableOptionBooleanConverter(b : Option[Boolean]) {
+		def asComparable = new ComparableOptionBoolean(b)
+	}
+
+
+	// //TODO: do we need Int and Long, can we just have long?
+
+
+	implicit def toComparableSeqStringConverter(s:Seq[String]) = new ComparableSeqStringConverter(s)
+
+
+	class ComparableSeqStringConverter(s : Seq[String]) {
+		def asComparable = new ComparableSeqString(s)
+	}
+
+	implicit def toComparableSeqIntConverter(i:Seq[Int]) = new ComparableSeqIntConverter(i)
+
+
+	class ComparableSeqIntConverter(i : Seq[Int]) {
+		def asComparable = new ComparableSeqLong(i.map {_.asInstanceOf[Long]})
+	}
+
+
+
+	implicit def toComparableSeqLongConverter(l:Seq[Long]) = new ComparableSeqLongConverter(l)
+
+	class ComparableSeqLongConverter(l : Seq[Long]) {
+		def asComparable = new ComparableSeqLong(l)
+	}
+
+
+	implicit def toComparableSeqLongConverter(b:Seq[Boolean]) = new ComparableSeqBooleanConverter(b)
+
+	class ComparableSeqBooleanConverter(b : Seq[Boolean]) {
+		def asComparable = new ComparableSeqBoolean(b)
+	}
+
 }
