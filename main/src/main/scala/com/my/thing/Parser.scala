@@ -12,14 +12,7 @@ object Parser extends RegexParsers {
   def equals : Parser[ContextualBooleanFunction]    = """equals(""" ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ {  
      _ match {
         case _ ~ keypath ~ _ ~ literal  ~ _ => {
-          a => {
-            val result = KeypathLookup.lookup(keypath, a) equals literal
-            val lookup = KeypathLookup.lookup(keypath, a)
-            val lookupResult = KeypathLookup.lookup(keypath, a).getClass
-            val literalClass = literal.getClass
-            println(s"$literal $literalClass $lookup $lookupResult $result")
-            KeypathLookup.lookup(keypath, a) equals literal
-          }
+          a => KeypathLookup.lookup(keypath, a) equals literal
         }
       }
       

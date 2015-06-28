@@ -10,37 +10,15 @@ object EvaluatorWrapperClasses {
 	sealed abstract class Comparable(value : Any) {
 		def equals(other : Comparable) : Boolean = { //Maybe this should return a ComparisonResult of which there are 2 subtypes, ValidComparison and InvalidComparison
 
-			println ("I AM UP HERE")
-			println(this)
-			println(other)
 			(this, other) match {
 
 				case (ComparableOptionString(Some(thisValue)), ComparableOptionString(Some(otherValue))) => thisValue equals otherValue 
 				
-				// case (ComparableOptionInt(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => {
-				// 	println("I AM HERE")
-				// 	println(thisValue.getClass)
-				// 	println(otherValue.getClass)
-				// 	println(thisValue equals otherValue )
-				// 	thisValue equals otherValue
-				// }
-				// case (ComparableOptionLong(Some(thisValue)), ComparableOptionInt(Some(otherValue))) => {
-				// 	println("I AM HERE")
-				// 	println(thisValue equals otherValue )
-				// 	thisValue equals otherValue 
-				// }
-
-				//case (ComparableOptionInt(Some(thisValue)), ComparableOptionInt(Some(otherValue))) => thisValue equals otherValue 
 				case (ComparableOptionLong(Some(thisValue)), ComparableOptionLong(Some(otherValue))) => thisValue equals otherValue 
 
 				case (ComparableOptionBoolean(Some(thisValue)), ComparableOptionBoolean(Some(otherValue))) => thisValue equals otherValue
 
 
-
-				// case (ComparableSeqLong(thisValue), ComparableSeqInt(otherValue)) => thisValue equals otherValue
-				// case (ComparableSeqInt(thisValue), ComparableSeqLong(otherValue)) => thisValue equals otherValue
-
-				//case (ComparableSeqInt(thisValue), ComparableSeqInt(otherValue)) => thisValue equals otherValue
 				case (ComparableSeqLong(thisValue), ComparableSeqLong(otherValue)) => thisValue equals otherValue
 
 				case (ComparableSeqString(thisValue), ComparableSeqString(otherValue)) => thisValue equals otherValue
@@ -59,16 +37,14 @@ object EvaluatorWrapperClasses {
 	}
 
 
-	// //TODO: should we have support for float?
+	// //TODO: should we have support for BigInt / float?
 
-	//options only for primitives, makes it a bit easier to reason about the comparisons
+	//Option[T] only for primitives, makes it a bit easier to reason about the comparisons
 
 	case class ComparableOptionString(value : Option[String]) extends Comparable(value)
-	//case class ComparableOptionInt(value : Option[Int]) extends Comparable(value)
 	case class ComparableOptionLong(value : Option[Long]) extends Comparable(value)
 	case class ComparableOptionBoolean(value : Option[Boolean]) extends Comparable(value)
 
-	//case class ComparableSeqInt(value : Seq[Int]) extends Comparable(value)
 	case class ComparableSeqLong(value : Seq[Long]) extends Comparable(value)
 	case class ComparableSeqString(value : Seq[String]) extends Comparable(value)
 	case class ComparableSeqBoolean(value : Seq[Boolean]) extends Comparable(value)
@@ -131,9 +107,6 @@ object EvaluatorWrapperConverters {
 	class ComparableOptionBooleanConverter(b : Option[Boolean]) {
 		def asComparable = new ComparableOptionBoolean(b)
 	}
-
-
-	// //TODO: do we need Int and Long, can we just have long?
 
 
 	implicit def toComparableSeqStringConverter(s:Seq[String]) = new ComparableSeqStringConverter(s)
