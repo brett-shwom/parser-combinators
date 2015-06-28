@@ -6,7 +6,13 @@ class ParserSpec extends FlatSpec {
 
 	"The parser" should "do stuff" in {
 
-		println(Parser.parse("and(equals('user.name', true),equals('user.name', true)) "))
+		val parsedExpression = Parser.parse("and(equals('user.name', true),equals('user.name', true))").get
+
+		implicit val a = A("a", Seq(1), B("1"))
+
+		println(parsedExpression(a))
+
+
 
 	}
 
