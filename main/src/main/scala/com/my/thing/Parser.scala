@@ -1,33 +1,41 @@
 package com.my.thing
 
-import scala.util.parsing.combinator._
-
 import EvaluatorWrapperClasses._
+import scala.util.parsing.combinator._
+import scala.util.Try
 
 
-object Parser extends RegexParsers {
+trait Parser  {
   type ContextualBooleanFunction  = (A) => Boolean
 
-  def always : Parser[ContextualBooleanFunction]    = "always()" ^^ { x => anything => true }
-  def equals : Parser[ContextualBooleanFunction]    = """equals(""" ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ {  
-     _ match {
-        case _ ~ keypath ~ _ ~ literal  ~ _ => {
-          a => KeypathLookup.lookup(keypath, a) equals literal
-        }
+  def parse(stringToParse: String) : Try[ContextualBooleanFunction]
+
+}
+
+object Parser extends RegexParsers with Parser {
+
+
+  def always : Parser[ContextualBooleanFunction] = "always()" ^^ { x => anything => true }
+
+  def equals : Parser[ContextualBooleanFunction] = """equals(""" ~ keypath  ~ "," ~ ( booleanLiteral | stringLiteral | longLiteral ) ~ ")" ^^ {  
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => KeypathLookup.lookup(keypath, a) equals literal
       }
+    }
       
   }
-  def greaterThan: Parser[ContextualBooleanFunction]         = """greaterThan("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
-      _ match {
-        case _ ~ keypath ~ _ ~ literal  ~ _ => {
-          a => {
-            KeypathLookup.lookup(keypath, a) greaterThan literal
-          }
+  def greaterThan: Parser[ContextualBooleanFunction] = """greaterThan("""  ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+    _ match {
+      case _ ~ keypath ~ _ ~ literal  ~ _ => {
+        a => {
+          KeypathLookup.lookup(keypath, a) greaterThan literal
         }
       }
+    }
   }
 
-  def greaterThanOrEqual: Parser[ContextualBooleanFunction]         = """greaterThanOrEqual("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+  def greaterThanOrEqual: Parser[ContextualBooleanFunction] = """greaterThanOrEqual(""" ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
     _ match {
       case _ ~ keypath ~ _ ~ literal  ~ _ => {
         a => {
@@ -37,7 +45,7 @@ object Parser extends RegexParsers {
     }
   }
 
-  def lessThan: Parser[ContextualBooleanFunction]         = """lessThan("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+  def lessThan: Parser[ContextualBooleanFunction] = """lessThan(""" ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
     _ match {
       case _ ~ keypath ~ _ ~ literal  ~ _ => {
         a => {
@@ -47,7 +55,7 @@ object Parser extends RegexParsers {
     }
   }
 
-  def lessThanOrEqual: Parser[ContextualBooleanFunction]         = """lessThanOrEqual("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+  def lessThanOrEqual: Parser[ContextualBooleanFunction]         = """lessThanOrEqual(""" ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
     _ match {
       case _ ~ keypath ~ _ ~ literal  ~ _ => {
         a => {
@@ -57,7 +65,7 @@ object Parser extends RegexParsers {
     }
   }
 
-  def contains: Parser[ContextualBooleanFunction]         = """contains("""       ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
+  def contains: Parser[ContextualBooleanFunction]         = """contains(""" ~ keypath  ~ "," ~ longLiteral ~ ")" ^^ { 
     _ match {
       case _ ~ keypath ~ _ ~ literal  ~ _ => {
         a => {
@@ -85,18 +93,22 @@ object Parser extends RegexParsers {
     }
   }
 
-  def keypath : Parser[String]            = (("'" ~ """[_0-9A-Za-z\.]+""".r ~ "'") | ( "\"" ~ """[_0-9A-Za-z\.]+""".r  ~ "\"" )) ^^ { 
+  def keypath : Parser[String]   = (("'" ~ """[_0-9A-Za-z\.]+""".r ~ "'") | ( "\"" ~ """[_0-9A-Za-z\.]+""".r  ~ "\"" )) ^^ { 
     case _ ~ keypath ~  _ => keypath
   }
-  //look ma, no Ints!
-  def longLiteral : Parser[ComparableOptionLong]          = """[0-9]+""".r ^^ { l => ComparableOptionLong(Some(l.toLong)) }
 
-  def stringLiteral : Parser[ComparableOptionString]      = (("'" ~ """[^\']+""".r ~ "'") | ( "\"" ~ """[^\"]+""".r  ~ "\"" )) ^^ { 
+  //look ma, no Ints!
+  def longLiteral : Parser[ComparableOptionLong]  = """[0-9]+""".r ^^ { l => ComparableOptionLong(Some(l.toLong)) }
+
+  //TODO: BigDecimals?
+
+  //TODO: support escaped quotes...use something from JavaTokenParsers
+  def stringLiteral : Parser[ComparableOptionString] = (("'" ~ """[^\']+""".r ~ "'") | ( "\"" ~ """[^\"]+""".r  ~ "\"" )) ^^ { 
     case _ ~ stringLiteral ~  _ => ComparableOptionString(Some(stringLiteral))
   } 
-  def booleanLiteral : Parser[ComparableOptionBoolean]    = ("true" | "false") ^^ { trueOrFalseString => if (trueOrFalseString == "true") ComparableOptionBoolean(Some(true)) else ComparableOptionBoolean(Some(false)) }
+  def booleanLiteral : Parser[ComparableOptionBoolean] = ("true" | "false") ^^ { trueOrFalseString => if (trueOrFalseString == "true") ComparableOptionBoolean(Some(true)) else ComparableOptionBoolean(Some(false)) }
   
-  def comparisonExpression : Parser[ContextualBooleanFunction]   = (
+  def comparisonExpression : Parser[ContextualBooleanFunction] = (
     equals | 
     greaterThan | 
     greaterThanOrEqual |
@@ -104,10 +116,15 @@ object Parser extends RegexParsers {
     lessThanOrEqual |
     contains
     )
+
   def operatorExpression : Parser[ContextualBooleanFunction] = and | or | not
+
   def expressionRoot = operatorExpression | comparisonExpression | always
 
-  def parse(stringToParse: String)        = parseAll(expressionRoot, stringToParse)
+  def parse(stringToParse: String) = parseAll(expressionRoot, stringToParse) match {
+    case Success(result, next) => scala.util.Success(result)
+    case NoSuccess(message, next) => scala.util.Failure(new Exception(message)) //new Exception, gross...
+  }
 
 } 
 
