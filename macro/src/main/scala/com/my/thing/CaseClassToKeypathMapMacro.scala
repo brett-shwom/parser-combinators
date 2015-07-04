@@ -34,11 +34,19 @@ object CaseClassToKeypathMapMacro {
 
         val lambda = q"($x => x)"
 
-        val subtree = explore(lambda,optionInnerType, keypath) //TODO: do something with me
+        val subtreesAndKeypaths = explore(lambda,optionInnerType, keypath ) //TODO: do something with me
 
-        val mapOperation = q"${tree}.map( $lambda )" 
+        subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
 
-        Seq((keypath, mapOperation))
+          //TODO: what do I do with the subtree?
+
+          val mapOperation = q"${tree}.map( $lambda )" 
+
+          (subtreeKeypath, mapOperation)
+
+        }
+
+
 
       } else if ( //grossness...maybe we should just check of its a weak type of any of the types declared in a certain package?
            _type <:< weakTypeOf[AnyVal] 
@@ -54,7 +62,7 @@ object CaseClassToKeypathMapMacro {
               q"${tree}.${field}", 
               field.asMethod.returnType, 
               keypath :+ field.name.decoded
-              //TODO: do I need to pass `trees` here?
+              //TODO: do I need to pass `trees` here? I don't think so...
             )
           }
         }.toSeq
