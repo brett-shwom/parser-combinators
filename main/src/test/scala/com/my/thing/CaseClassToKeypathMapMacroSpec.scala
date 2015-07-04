@@ -2,12 +2,10 @@ package com.my.thing
 
 import org.scalatest._
 
-import EvaluatorWrapperClasses._
-
-class MacroSpec extends WordSpec with Matchers {
+class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 
 
-	"The KeypathMap macro | non-nested functionality" when {
+	"The CaseClassToKeypathMap macro | non-nested functionality" when {
 
 		"passed an instance of a case class with no properties" should  {
 			"""generate an empty map""" in {
@@ -65,7 +63,7 @@ class MacroSpec extends WordSpec with Matchers {
 		}
 	}
 
-	"The KeypathMap macro | nested functionality" when {
+	"The CaseClassToKeypathMap macro | nested functionality" when {
 
 		"passed an instance of a case class with an Seq[SomeOtherCaseClass] property" should  {
 			"""generate a map like ("aSeqOfCaseClassB" -> a.aSeqOfCaseClassB)""" in {
@@ -151,7 +149,7 @@ class MacroSpec extends WordSpec with Matchers {
 
 	}
 
-	"The KeypathMap macro | nested functionality | Option flattening" when {
+	"The CaseClassToKeypathMap macro | nested functionality | Option flattening" when {
 
 		"passed an instance of a case class with an Option[SomeOtherCaseClassWhichItselfHasAnOption[Int]] property" should  {
 			//i.e. the options in the values should be flattened to one single option
