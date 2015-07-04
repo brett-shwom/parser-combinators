@@ -4,40 +4,109 @@ import org.scalatest._
 
 import EvaluatorWrapperClasses._
 
-class MacroSpec extends FlatSpec with Matchers {
-
-	"The KeypathMap macro" should "generate the correct map" in {
+class MacroSpec extends WordSpec with Matchers {
 
 
+	"The KeypathMap macro" when {
+		"passed an instance of a case class with a String property" should  {
+			"generate a proper map" in {
+				case class A(aString : String)
 
-		val s = Simple(Some("f1.5"))
+				val a = A("something")
 
-		val x = Macro[Simple](s)
+				Macro[A](a) should equal (Map("aString" -> a.aString))
 
-		println(x)
+			}
+		}
 
-		val l = LessSimple(Some("f1.5"), 2)
+		"passed an instance of a case class with an Int property" should  {
+			"generate a proper map" in {
+				case class A(anInt : Int)
 
-		val y = Macro[LessSimple](l)
+				val a = A(1)
 
-		println("y" + y)
+				Macro[A](a) should equal (Map("anInt" -> a.anInt))
 
+			}
+		}
 
-		val a = A("f1", Seq(1), B("bf1"), 1, Some("A"))
+		"passed an instance of a case class with an Seq[Int] property" should  {
+			"generate a proper map" in {
+				case class A(aSeqInt : Seq[Int])
 
-		val z = Macro[A](a)
+				val a = A(Seq(1))
 
-		println("z" + z)
+				Macro[A](a) should equal (Map("aSeqInt" -> a.aSeqInt))
 
-		val aa = A("f1", Seq(1), B("bf1", Some(C("1"))))
+			}
+		}
 
-		val zz = Macro[A](aa)
+		"passed an instance of a case class with an Seq[SomeOtherCaseClass] property" should  {
+			"generate a proper map" in {
+				case class A(aSeqOfCaseClassB : Seq[B])
+				case class B(anInt : Int)
 
-		println("zz" + zz)
+				val a = A(Seq(B(1)))
 
-	}
+				Macro[A](a) should equal (Map("aSeqOfCaseClassB" -> a.aSeqOfCaseClassB))
 
-	
+			}
+		}
+
+		"passed an instance of a case class with a SomeOtherCaseClass property" should  {
+			"generate a proper map" in {
+				case class A(anInstanceOfSomeOtherCaseClass : B)
+				case class B(anInt : Int)
+
+				val a = A(B(1))
+
+				Macro[A](a) should equal (Map("anInstanceOfSomeOtherCaseClass.anInt" -> a.anInstanceOfSomeOtherCaseClass.anInt))
+
+			}
+		}
+
+		"passed an instance of a case class with an Option[Int] property" should  {
+
+			case class A(anOptionInt : Option[Int])
+
+			"generate a proper map when that Option is Some[Int]" in {
+				
+				val a = A(Some(1))
+
+				Macro[A](a) should equal (Map("anOptionInt" -> Some(a.anOptionInt)))
+
+			}
+			"generate a proper map when that Option is None" in {
+
+				val a = A(None)
+
+				Macro[A](a) should equal (Map("anOptionInt" -> None))
+
+			}
+		}
+
+		"passed an instance of a case class with an Option[SomeOtherCaseClass] property" should  {
+
+			case class A(anOptionOfCaseClassB : Option[B])
+			case class B(anInt : Int)
+
+			"generate a proper map when that Option is Some[SomeOtherCaseClass]" in {
+
+				val a = A(Some(B(1)))
+
+				Macro[A](a) should equal (Map("anOptionOfCaseClassB.anInt" -> Some(a.anOptionOfCaseClassB.get.anInt)))
+
+			}
+			"generate a proper map when that Option is None" in {
+
+				val a = A(None)
+
+				Macro[A](a) should equal (Map("anOptionOfCaseClassB.anInt" -> None))
+
+			}
+		}
+
+	}	
 
 }
 
