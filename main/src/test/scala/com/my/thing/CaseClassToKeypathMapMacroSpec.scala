@@ -130,7 +130,7 @@ class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 			case class A(anOptionOfCaseClassB : Option[B])
 			case class B(anInt : Int)
 
-			"""generate a map when that Option is Some[SomeOtherCaseClass] like ("anOptionOfCaseClassB.anInt" -> a.anOptionOfCaseClassB.get.anInt)""" in {
+			"""generate a map when that Option is Some[SomeOtherCaseClass] like ("anOptionOfCaseClassB.anInt" -> a.anOptionOfCaseClassB.map(anInt -> anInt)""" in {
 
 				val a = A(Some(B(1)))
 
