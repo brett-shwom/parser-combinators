@@ -152,12 +152,15 @@ class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 	"The CaseClassToKeypathMap macro | nested functionality | Option flattening" when {
 
 		"passed an instance of a case class with an Option[SomeOtherCaseClassWhichItselfHasAnOption[Int]] property" should  {
-			//i.e. the options in the values should be flattened to one single option
+			//i.e. the options in the values should be flattened to one single option 
+			//and all Options should be extracted from the fields that contain them
+			//i.e. a.anOptionOfCaseClassB.anOptionInt should be evaluate to anOptionInt and not something like B(anOptionInt)
 
 
 			case class A(anOptionOfCaseClassB : Option[B])
 			case class B(anOptionInt : Option[Int])
 
+			//TODO: .flatMap isnt right...rewrite the description of this test...the code of the test is fine...
 			"""generate a map when that Option is Some[SomeOtherCaseClassWhichItselfHasAnOption[Int]] like ("anOptionOfSomeOtherCaseClassWhichItselfHasAnOption.anOptionInt" -> a.anOptionOfSomeOtherCaseClassWhichItselfHasAnOption.flatMap(anOptionInt -> anOptionInt)""" in {
 
 				val a = A(Some(B(Some(1))))

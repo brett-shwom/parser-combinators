@@ -39,6 +39,10 @@ object CaseClassToKeypathMapMacro {
         subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
 
           //TODO: what do I do with the subtree?
+          //TODO: what about flattening nested options?
+          //TODO: what about extracting values out of the case classes that contain them?
+          //      i.e. a.anOptionOfCaseClassB.anOptionInt should be evaluate to anOptionInt and not something like B(anOptionInt)
+
 
           val mapOperation = q"${tree}.map( $lambda )" 
 
