@@ -8,15 +8,32 @@ class MacroSpec extends FlatSpec with Matchers {
 
 	"The KeypathMap macro" should "generate the correct map" in {
 
-		// val a = A("f1", Seq(1), B("bf1"))
-		// case class A()
-		// val b = A()
+
+
+		val s = Simple(Some("f1.5"))
+
+		val x = Macro[Simple](s)
+
+		println(x)
+
+		val l = LessSimple(Some("f1.5"), 2)
+
+		val y = Macro[LessSimple](l)
+
+		println("y" + y)
+
 
 		val a = A("f1", Seq(1), B("bf1"))
 
-		val x = Macro[A](a)
+		val z = Macro[A](a)
 
-		println(x)
+		println("z" + z)
+
+		val aa = A("f1", Seq(1), B("bf1", Some(C("1"))))
+
+		val zz = Macro[A](aa)
+
+		println("zz" + zz)
 
 	}
 

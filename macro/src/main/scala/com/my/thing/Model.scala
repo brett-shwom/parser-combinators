@@ -7,19 +7,16 @@ import scala.language.experimental.macros
 
 object Macro {
 
+  type Keypath = String
+
   def apply[T](f : Any) = macro impl[T]
 
   def impl[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
     import c.universe._
 
-    val tpe = weakTypeOf[T]
+    def doStuff(base : c.Tree, tpe2 : Type, typePath : String = "", trees : Seq[(Keypath,Tree)] = Seq()) : Seq[(Keypath, Tree)] = {
 
-    def doStuff(tpe2 : Type, accessor: c.Symbol, typePath : String) : Tree = {
-
-
-      println(tpe2 <:< weakTypeOf[AnyVal])
-
-      if (tpe2 <:< weakTypeOf[Option[_]]) {
+      if (tpe2 <:< weakTypeOf[Option[_]]) { 
         //thanks http://stackoverflow.com/a/20937550
         val innerType = tpe2.baseType(weakTypeOf[Option[_]].typeSymbol) match {
           case TypeRef(_, _, targ :: Nil) => targ
@@ -27,15 +24,21 @@ object Macro {
         }
         println ("innerType "  + innerType)
 
-        println(tpe2.member("map": TermName))
+        //println(tpe2.member("map": TermName))
 
-        val stuff = doStuff(innerType, q"(x=>x)", typePath)
+        val x = q"val x: $innerType"
 
-        val moreStuff = q"${accessor}.map(${stuff})"
+        println(showRaw(x))
+
+        val z = q"($x => x)"
+
+        val stuff = doStuff(z,innerType, typePath)
+
+        val moreStuff = q"${base}.map( $z )" 
 
         println("stuff " + moreStuff)
 
-        moreStuff
+        Seq((typePath, moreStuff))
 
         // q"""${accessor}.map($stuff)"""
 
@@ -44,57 +47,46 @@ object Macro {
         || tpe2 <:< weakTypeOf[String]
         || tpe2 <:< weakTypeOf[Seq[_]]
         ) {
-        q"$accessor"
+        Seq((typePath, base))
       }
       else {
-        q"$accessor"
+        val fieldTrees = tpe2.declarations.collect {
+          case field if field.isMethod && field.asMethod.isCaseAccessor => {
+            println(q"$base")
+            println(q"$field")
+            doStuff(
+              q"${base}.${field}", 
+              field.asMethod.returnType, typePath + "." + field.name.decoded)
+          }
+        }.toSeq
+
+        trees ++ fieldTrees.flatten
+        
       }
-
-      // val fields = tpe2.declarations.collect {
-      //   case field if field.isMethod && field.asMethod.isCaseAccessor => {
-      //     field.asMethod.accessed
-      //   }
-      // }
-
-      // //this comparison seems weird....
-
-      // if (fields.size == 0) Seq(typePath)
-      // else {
-      //   fields.map {
-      //     field => s"""${typePath}.${field.name.decoded}"""
-      //   }
-      // }
 
     }
 
-    val fields = tpe.declarations.collect {
-      case field if field.isMethod && field.asMethod.isCaseAccessor => {
-        doStuff(field.asMethod.returnType,field.asMethod.accessed, field.name.decoded)
-      }
+    val fields = doStuff(f, weakTypeOf[T])
+
+
+    val mapApply = q"Map.apply"
+
+
+    val pairs = fields.map { field => 
+      q"""${field._1} -> ${field._2}"""
     }
 
-    val flattened = fields
+    val retval = c.Expr[Map[String, Any]](Apply(mapApply, pairs.toList))
 
+    println("pairs" + pairs)
 
+    //println(fields)
+    println("retval" + retval)
 
-    println(flattened)
+    //c.Expr[Option[String]](fields.head)
 
-    // val mapApply = Select(reify(Map).tree, newTermName("apply"))
-
-
-    // val pairs = flattened.map { field => 
-    //   val s = Select(f, field)
-    //   q"${field} -> ${s}"
-    // }
-
-    //val retval = c.Expr[Map[String, Any]](Apply(mapApply, pairs.toList))
-
-    println(fields)
-
-    c.Expr(q"..$fields")
-
-    
-    //c.Expr[Map[String,String]](q"""Map("a" -> "a")""")
+    retval
+    //c.Expr[Map[String,Any]](retval)
   }
 
 
