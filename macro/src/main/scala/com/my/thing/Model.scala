@@ -7,107 +7,72 @@ import scala.language.experimental.macros
 
 object Macro {
 
-  type Keypath = String
+  type Keypath = Seq[String]
 
   def apply[T](f : Any) = macro impl[T]
 
   def impl[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
     import c.universe._
 
-    def doStuff(base : c.Tree, tpe2 : Type, typePath : String = "", trees : Seq[(Keypath,Tree)] = Seq()) : Seq[(Keypath, Tree)] = {
+    def explore(
+      tree    : c.Tree, 
+      _type   : Type, 
+      keypath : Seq[String] = Seq(), 
+      trees   : Seq[(Keypath,Tree)] = Seq()
+      ) : Seq[(Keypath, Tree)] = {
 
-      if (tpe2 <:< weakTypeOf[Option[_]]) { 
+      if (_type <:< weakTypeOf[Option[_]]) { 
+
         //thanks http://stackoverflow.com/a/20937550
-        val innerType = tpe2.baseType(weakTypeOf[Option[_]].typeSymbol) match {
+
+        val optionInnerType = _type.baseType(weakTypeOf[Option[_]].typeSymbol) match {
           case TypeRef(_, _, targ :: Nil) => targ
           case NoType => c.abort(c.enclosingPosition, "call this method with known type parameter only.")
         }
-        println ("innerType "  + innerType)
 
-        //println(tpe2.member("map": TermName))
+        val x = q"val x: $optionInnerType"
 
-        val x = q"val x: $innerType"
+        val lambda = q"($x => x)"
 
-        println(showRaw(x))
+        val subtree = explore(lambda,optionInnerType, keypath) //TODO: do something with me
 
-        val z = q"($x => x)"
+        val mapOperation = q"${tree}.map( $lambda )" 
 
-        val stuff = doStuff(z,innerType, typePath)
-
-        val moreStuff = q"${base}.map( $z )" 
-
-        println("stuff " + moreStuff)
-
-        Seq((typePath, moreStuff))
-
-        // q"""${accessor}.map($stuff)"""
+        Seq((keypath, mapOperation))
 
       } else if ( //grossness...maybe we should just check of its a weak type of any of the types declared in a certain package?
-           tpe2 <:< weakTypeOf[AnyVal] 
-        || tpe2 <:< weakTypeOf[String]
-        || tpe2 <:< weakTypeOf[Seq[_]]
+           _type <:< weakTypeOf[AnyVal] 
+        || _type <:< weakTypeOf[String]
+        || _type <:< weakTypeOf[Seq[_]]
         ) {
-        Seq((typePath, base))
+        Seq((keypath, tree))
       }
       else {
-        val fieldTrees = tpe2.declarations.collect {
+        val subtrees = _type.declarations.collect {
           case field if field.isMethod && field.asMethod.isCaseAccessor => {
-            println(q"$base")
-            println(q"$field")
-            doStuff(
-              q"${base}.${field}", 
-              field.asMethod.returnType, typePath + "." + field.name.decoded)
+            explore(
+              q"${tree}.${field}", 
+              field.asMethod.returnType, 
+              keypath :+ field.name.decoded
+              //TODO: do I need to pass `trees` here?
+            )
           }
         }.toSeq
 
-        trees ++ fieldTrees.flatten
+        trees ++ subtrees.flatten
         
       }
 
     }
 
-    val fields = doStuff(f, weakTypeOf[T])
+    val keypathsAndFields = explore(f, weakTypeOf[T])
+
+    val pairs = keypathsAndFields
+                  .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
+                  .map {  case (keypath, tree) => q"""${keypath} -> ${tree}"""  }
+
+    c.Expr[Map[String, Any]](Apply(q"Map.apply", pairs.toList))
 
 
-    val mapApply = q"Map.apply"
-
-
-    val pairs = fields.map { field => 
-      q"""${field._1} -> ${field._2}"""
-    }
-
-    val retval = c.Expr[Map[String, Any]](Apply(mapApply, pairs.toList))
-
-    println("pairs" + pairs)
-
-    //println(fields)
-    println("retval" + retval)
-
-    //c.Expr[Option[String]](fields.head)
-
-    retval
-    //c.Expr[Map[String,Any]](retval)
   }
-
-
-//  def asMap[T]: Map[String, Any] = macro Macros.asMap_impl[T]
-
-  // object Macros {
-
-  //   def asMap_impl[T: c.WeakTypeTag](c: Context) = {
-  //     import c.universe._
-
-  //     val mapApply = Select(reify(Map).tree, newTermName("apply"))
-  //     val model = Select(c.prefix.tree, newTermName("model"))
-
-  //     val pairs = weakTypeOf[T].declarations.collect {
-  //       case m: MethodSymbol if m.isCaseAccessor =>
-  //         val name = c.literal(m.name.decoded)
-  //         val value = c.Expr(Select(model, m.name))
-  //         reify(name.splice -> value.splice).tree
-  //     }
-
-  //     c.Expr[Map[String, Any]](Apply(mapApply, pairs.toList))
-  //   }
-  // }
 }
