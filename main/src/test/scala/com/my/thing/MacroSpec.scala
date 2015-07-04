@@ -23,7 +23,7 @@ class MacroSpec extends FlatSpec with Matchers {
 		println("y" + y)
 
 
-		val a = A("f1", Seq(1), B("bf1"))
+		val a = A("f1", Seq(1), B("bf1"), 1, Some("A"))
 
 		val z = Macro[A](a)
 
