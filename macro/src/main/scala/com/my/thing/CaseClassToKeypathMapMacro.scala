@@ -5,7 +5,7 @@ import scala.language.experimental.macros
 
 //props to http://stackoverflow.com/a/17224392
 
-object Macro {
+object CaseClassToKeypathMapMacro {
 
   type Keypath = Seq[String]
 
