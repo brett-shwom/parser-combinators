@@ -1,5 +1,7 @@
 package com.my.thing
 
+import scala.language.implicitConversions
+
 object EvaluatorWrapperClasses {
 
 	/* Wrapper classes which :
