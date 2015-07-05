@@ -16,7 +16,7 @@ object CaseClassToKeypathMapMacro {
 
     def explore(
       tree    : c.Tree, 
-      _type   : Type, //TODO: is there a way to remove this `_type` parameter and instead get the type it by calling some method on tree?
+      _type   : Type, //TODO: is there a way to remove this `_type` parameter and instead get the type it by calling some method on `f`? ... maybe this makes no sense?
       keypath : Seq[String] = Seq()
       ) : Seq[(Keypath, Tree)] = {
 
@@ -42,11 +42,17 @@ object CaseClassToKeypathMapMacro {
           val lambdaTypeArguments = expressionUsedForTypeChecking.actualType.typeArgs
           val lambdaReturnType = lambdaTypeArguments.last //kind of an ugly way to get the return type of the lambda
 
-          val mapOrFlatMapOperation = 
+          val possiblyMappedOrFlatMappedTree = 
             if (lambdaReturnType <:< weakTypeOf[Option[_]]) q"${tree}.flatMap( $lambda )"
+            else if (lambda equalsStructure q"($x => x)")   tree
             else                                            q"${tree}.map( $lambda )"
+            //N.B.  I check if the lambda is just the identity lambda (x=>x), in which case there's no need to map
+            //      This avoids creating trees which have an identity lambda as a leaf node.
+            //      Ex: (Map.apply("anOptionInt".$minus$greater(a.anOptionInt.map(((x: Int) => x)))))
+            //           could be written as
+            //          (Map.apply("anOptionInt".$minus$greater(a.anOptionInt))
 
-          (subtreeKeypath, mapOrFlatMapOperation)
+          (subtreeKeypath, possiblyMappedOrFlatMappedTree)
 
         }
 
