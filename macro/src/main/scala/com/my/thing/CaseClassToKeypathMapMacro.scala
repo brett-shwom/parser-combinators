@@ -32,19 +32,37 @@ object CaseClassToKeypathMapMacro {
 
         val x = q"val x: $optionInnerType"
 
-        val lambda = q"($x => x)"
-
-        val subtreesAndKeypaths = explore(lambda,optionInnerType, keypath ) //TODO: do something with me
+        val subtreesAndKeypaths = explore(q"x",optionInnerType, keypath ) //TODO: do something with me
 
         subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
+
+          println("---")
+          println(tree)
+          println(subtree)
+          println(subtreeKeypath)
+
+          val lambda = q"($x => ${subtree})"
+
+          //thanks: http://stackoverflow.com/a/17394560
+          val expressionUsedForTypeChecking = c.Expr[Any](c.typeCheck(lambda))
+          val lambdaTypeArguments = expressionUsedForTypeChecking.actualType.typeArgs
+          val lambdaReturnType = lambdaTypeArguments.last //kind of an ugly way to get the return type of the lambda
+
+          println(lambdaReturnType)
 
           //TODO: what do I do with the subtree?
           //TODO: what about flattening nested options?
           //TODO: what about extracting values out of the case classes that contain them?
           //      i.e. a.anOptionOfCaseClassB.anOptionInt should be evaluate to anOptionInt and not something like B(anOptionInt)
 
+          //maybe we wanna say that if lambda's return type is Option[Option[_]], then we call flatMap....
 
-          val mapOperation = q"${tree}.map( $lambda )" 
+
+          val mapOperation = 
+            if (lambdaReturnType <:< weakTypeOf[Option[_]]) q"${tree}.flatMap( $lambda )"
+            else                                            q"${tree}.map( $lambda )"
+
+          println(mapOperation)
 
           (subtreeKeypath, mapOperation)
 
@@ -78,6 +96,8 @@ object CaseClassToKeypathMapMacro {
     }
 
     val keypathsAndFields = explore(f, weakTypeOf[T])
+
+    println(keypathsAndFields)
 
     val pairs = keypathsAndFields
                   .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
