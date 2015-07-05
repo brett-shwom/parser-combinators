@@ -4,6 +4,7 @@ import org.scalatest._
 
 class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 
+	import EvaluatorWrapperConverters._
 
 	"The CaseClassToKeypathMap macro | non-nested functionality" when {
 
@@ -181,7 +182,36 @@ class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 			}
 		}
 
-	}	
+	}
+
+	"The CaseClassToKeypathMap macro" when {
+		"building a narrow map" should {
+			"narrow the map's key type" in {
+
+				case class A(anInt : Int, aBoolean : Boolean)
+
+				val anInt = 1
+				val aBoolean = false
+
+				val toString = "it really doesnt matter what i am" //TODO: I need to find a much better way of doing this
+																   // basically the macro is taking the actual name of the
+																   // variable (in this case `toString`) and splicing that
+																   // onto the leaf of each tree it creates
+
+				val a = A(1, false)
+
+				CaseClassToKeypathMapMacro
+					.buildNarrowMap[A, String](a, toString) should equal (
+						Map(
+							"anInt" -> anInt.toString,
+							"aBoolean" -> aBoolean.toString
+						) : Map[String, String]
+					)
+
+			}
+
+		}
+	}
 
 }
 

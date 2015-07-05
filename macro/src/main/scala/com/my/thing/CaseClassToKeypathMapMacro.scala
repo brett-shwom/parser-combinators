@@ -9,9 +9,40 @@ object CaseClassToKeypathMapMacro {
 
   type Keypath = Seq[String]
 
-  def apply[T](f : Any) : Map[String, Any] = macro impl[T]
+  //def buildWideMap[T](f : Any) : Map[String, Any] = macro buildWideMapImpl[T]
+  def apply[T](f : Any) : Map[String, Any] = macro buildWideMapImpl[T]
 
-  def impl[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
+  def buildNarrowMap[T,R](f : Any, narrowingFunctionIdentifier : String) : Map[String,R] = macro buildNarrowMapImpl[T,R]
+
+  def buildNarrowMapImpl[T: c.WeakTypeTag, R:c.WeakTypeTag](c : Context)(f: c.Tree, narrowingFunctionIdentifier : c.Tree)  
+    = {
+    
+    import c.universe._
+
+    val narrowingFunctionTermName = narrowingFunctionIdentifier match { //TODO: how can I do this with quasiquote unlifting?
+      case Ident(termName@TermName(x)) => termName
+      case _ => c.abort(c.enclosingPosition, "Not an Ident(TermName())")
+    }
+
+    val keyValuePairs = buildMapKeypathTreePairs[T](c)(f)
+                          .map {  case (keypath, tree) => q"""${keypath} -> ${tree}.${narrowingFunctionTermName}"""  }
+
+    q"Map.apply(..${keyValuePairs})"
+
+
+  }
+
+  def buildWideMapImpl[T: c.WeakTypeTag](c : Context)(f: c.Tree) = {
+    import c.universe._
+
+    val keyValuePairs = buildMapKeypathTreePairs[T](c)(f)
+                          .map {  case (keypath, tree) => q"""${keypath} -> ${tree}"""}
+
+    q"Map.apply(..${keyValuePairs})"
+  }
+
+
+  def buildMapKeypathTreePairs[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
     import c.universe._
 
     def explore(
@@ -81,11 +112,11 @@ object CaseClassToKeypathMapMacro {
 
     val keypathsAndFields = explore(f, weakTypeOf[T])
 
-    val pairs = keypathsAndFields
-                  .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
-                  .map {  case (keypath, tree) => q"""${keypath} -> ${tree}"""  }
+    val keypathTreePairs = keypathsAndFields
+                          .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
 
-    q"Map.apply(..${pairs})"
+
+    keypathTreePairs
 
   }
 }
