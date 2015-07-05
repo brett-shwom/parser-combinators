@@ -19,6 +19,8 @@ object CaseClassToKeypathMapMacro {
     
     import c.universe._
 
+    //TODO: I could replace this with TermName(someString) if I knew how to pass a String (not a Tree) to a macro method...
+
     val narrowingFunctionTermName = narrowingFunctionIdentifier match { //TODO: how can I do this with quasiquote unlifting?
       case Ident(termName@TermName(x)) => termName
       case _ => c.abort(c.enclosingPosition, "Not an Ident(TermName())")
