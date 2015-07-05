@@ -9,7 +9,7 @@ object CaseClassToKeypathMapMacro {
 
   type Keypath = Seq[String]
 
-  def apply[T](f : Any) = macro impl[T]
+  def apply[T](f : Any) : Map[String, Any] = macro impl[T]
 
   def impl[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
     import c.universe._
@@ -38,15 +38,15 @@ object CaseClassToKeypathMapMacro {
           val lambda = q"($x => ${subtree})"
 
           //thanks: http://stackoverflow.com/a/17394560
-          val expressionUsedForTypeChecking = c.Expr[Any](c.typeCheck(lambda))
+          val expressionUsedForTypeChecking = c.Expr[Any](c.typecheck(lambda))
           val lambdaTypeArguments = expressionUsedForTypeChecking.actualType.typeArgs
           val lambdaReturnType = lambdaTypeArguments.last //kind of an ugly way to get the return type of the lambda
 
-          val mapOperation = 
+          val mapOrFlatMapOperation = 
             if (lambdaReturnType <:< weakTypeOf[Option[_]]) q"${tree}.flatMap( $lambda )"
             else                                            q"${tree}.map( $lambda )"
 
-          (subtreeKeypath, mapOperation)
+          (subtreeKeypath, mapOrFlatMapOperation)
 
         }
 
@@ -60,12 +60,12 @@ object CaseClassToKeypathMapMacro {
         Seq((keypath, tree))
       }
       else {
-        val subtrees = _type.declarations.collect {
+        val subtrees = _type.decls.collect {
           case field if field.isMethod && field.asMethod.isCaseAccessor => {
             explore(
               q"${tree}.${field}", 
               field.asMethod.returnType, 
-              keypath :+ field.name.decoded
+              keypath :+ field.name.decodedName.toString
             )
           }
         }.toSeq
