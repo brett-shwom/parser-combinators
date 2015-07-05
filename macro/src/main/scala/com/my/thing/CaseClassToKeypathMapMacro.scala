@@ -16,7 +16,7 @@ object CaseClassToKeypathMapMacro {
 
     def explore(
       tree    : c.Tree, 
-      _type   : Type, 
+      _type   : Type, //TODO: is there a way to remove this `_type` parameter and instead get the type it by calling some method on tree?
       keypath : Seq[String] = Seq()
       ) : Seq[(Keypath, Tree)] = {
 
@@ -50,9 +50,7 @@ object CaseClassToKeypathMapMacro {
 
         }
 
-
-
-      } else if ( //grossness...maybe we should just check of its a weak type of any of the types declared in a certain package?
+      } else if ( //TODO: grossness...maybe we should just check of its a weak type of any of the types declared in a certain package?
            _type <:< weakTypeOf[AnyVal] 
         || _type <:< weakTypeOf[String]
         || _type <:< weakTypeOf[Seq[_]]
@@ -73,7 +71,6 @@ object CaseClassToKeypathMapMacro {
         subtrees.flatten
         
       }
-
     }
 
     val keypathsAndFields = explore(f, weakTypeOf[T])
@@ -82,8 +79,7 @@ object CaseClassToKeypathMapMacro {
                   .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
                   .map {  case (keypath, tree) => q"""${keypath} -> ${tree}"""  }
 
-    c.Expr[Map[String, Any]](Apply(q"Map.apply", pairs.toList))
-
+    q"Map.apply(..${pairs})"
 
   }
 }
