@@ -31,7 +31,7 @@ object CaseClassToKeypathMapMacro {
 
         val x = q"val x: $optionInnerType"
 
-        val subtreesAndKeypaths = explore(q"x",optionInnerType, keypath ) //TODO: do something with me
+        val subtreesAndKeypaths = explore(q"x",optionInnerType, keypath )
 
         subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
 
