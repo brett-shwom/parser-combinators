@@ -5,5 +5,5 @@ scalaVersion := _scalaVersion
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
 libraryDependencies ++= Seq(
-	"org.scala-lang" % "scala-reflect" % _scalaVersion
+  "org.scala-lang" % "scala-reflect" % _scalaVersion
 )

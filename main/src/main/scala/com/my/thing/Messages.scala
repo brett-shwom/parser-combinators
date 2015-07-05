@@ -5,4 +5,4 @@ case class B(f1 : String, f2 : Option[C] = None)
 case class C(f1 : String)
 
 case class Simple(f1 : Option[String])
-case class LessSimple(f1 : Option[String], f2 : Int)
+case class LessSimple(f1 : Option[String], f2 : Int) 
