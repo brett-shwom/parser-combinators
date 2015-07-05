@@ -159,18 +159,24 @@ class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 			case class A(anOptionOfCaseClassB : Option[B])
 			case class B(anOptionInt : Option[Int])
 
+			//TODO: make these descriptions easier to understand
+
 			"""generate a map when that Option is Some[SomeOtherCaseClassWhichItselfHasAnOption[Int]] like ("anOptionOfSomeOtherCaseClassWhichItselfHasAnOption.anOptionInt" -> a.flatMap(x -> x.anOptionOfSomeOtherCaseClassWhichItselfHasAnOption.anOptionInt))""" in {
 
-				val a = A(Some(B(Some(1))))
+				val flattenedValue = 1
 
-				CaseClassToKeypathMapMacro[A](a) should equal (Map("anOptionOfCaseClassB.anOptionInt" -> Some(a.anOptionOfCaseClassB.get.anOptionInt.get)))
+				val a = A(Some(B(Some(flattenedValue))))
+
+				CaseClassToKeypathMapMacro[A](a) should equal (Map("anOptionOfCaseClassB.anOptionInt" -> Some(flattenedValue)))
 
 			}
 			"""generate a map when that Option is Some(SomeOtherCaseClassWhichItselfHasAnOption(None)) like ("anOptionOfSomeOtherCaseClassWhichItselfHasAnOption.anOptionInt" -> None)""" in {
 
-				val a = A(Some(B(None)))
+				val flattenedValue = None
 
-				CaseClassToKeypathMapMacro[A](a) should equal (Map("anOptionOfCaseClassB.anOptionInt" -> None))
+				val a = A(Some(B(flattenedValue)))
+
+				CaseClassToKeypathMapMacro[A](a) should equal (Map("anOptionOfCaseClassB.anOptionInt" -> flattenedValue))
 
 			}
 		}

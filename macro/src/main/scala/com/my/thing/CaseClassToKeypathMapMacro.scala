@@ -17,8 +17,7 @@ object CaseClassToKeypathMapMacro {
     def explore(
       tree    : c.Tree, 
       _type   : Type, 
-      keypath : Seq[String] = Seq(), 
-      trees   : Seq[(Keypath,Tree)] = Seq()
+      keypath : Seq[String] = Seq()
       ) : Seq[(Keypath, Tree)] = {
 
       if (_type <:< weakTypeOf[Option[_]]) { 
@@ -36,11 +35,6 @@ object CaseClassToKeypathMapMacro {
 
         subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
 
-          println("---")
-          println(tree)
-          println(subtree)
-          println(subtreeKeypath)
-
           val lambda = q"($x => ${subtree})"
 
           //thanks: http://stackoverflow.com/a/17394560
@@ -48,21 +42,9 @@ object CaseClassToKeypathMapMacro {
           val lambdaTypeArguments = expressionUsedForTypeChecking.actualType.typeArgs
           val lambdaReturnType = lambdaTypeArguments.last //kind of an ugly way to get the return type of the lambda
 
-          println(lambdaReturnType)
-
-          //TODO: what do I do with the subtree?
-          //TODO: what about flattening nested options?
-          //TODO: what about extracting values out of the case classes that contain them?
-          //      i.e. a.anOptionOfCaseClassB.anOptionInt should be evaluate to anOptionInt and not something like B(anOptionInt)
-
-          //maybe we wanna say that if lambda's return type is Option[Option[_]], then we call flatMap....
-
-
           val mapOperation = 
             if (lambdaReturnType <:< weakTypeOf[Option[_]]) q"${tree}.flatMap( $lambda )"
             else                                            q"${tree}.map( $lambda )"
-
-          println(mapOperation)
 
           (subtreeKeypath, mapOperation)
 
@@ -84,20 +66,17 @@ object CaseClassToKeypathMapMacro {
               q"${tree}.${field}", 
               field.asMethod.returnType, 
               keypath :+ field.name.decoded
-              //TODO: do I need to pass `trees` here? I don't think so...
             )
           }
         }.toSeq
 
-        trees ++ subtrees.flatten
+        subtrees.flatten
         
       }
 
     }
 
     val keypathsAndFields = explore(f, weakTypeOf[T])
-
-    println(keypathsAndFields)
 
     val pairs = keypathsAndFields
                   .map {  case (keypath, tree) => (keypath.mkString("."), tree) }
