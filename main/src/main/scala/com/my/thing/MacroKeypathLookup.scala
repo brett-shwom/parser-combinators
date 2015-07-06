@@ -4,22 +4,20 @@ import EvaluatorWrapperClasses._
 
 class MacroKeypathLookup extends Lookup {
 
-  
-
   def lookup(keypath : String, obj : A) : Comparable = MacroKeypathLookup.lookupTable.get(keypath) match {
     case None => ComparableUndefined()
     case Some(comparableGetter) => comparableGetter(obj)
   }
+
+
                               
-
-
 }
 
 object MacroKeypathLookup {
 
     import EvaluatorWrapperConverters._
 
-    val lookupTable = {
+    val lookupTable : Map[String, (A => Comparable)] = {
       val asComparable = """doesnt matter what I am as 
                             long as I'm a var defined in this method whose name is the same as
                             the method we'd like to call on each key in the map. please make 

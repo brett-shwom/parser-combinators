@@ -21,6 +21,11 @@ class KeypathLookupSpec extends FlatSpec with Matchers {
 
   }
 
+  "The MacroKeypathLookup when processing a case class with an unsupported field" should "not compile" in {
+    pending //TODO: need to genericize KeypathLookup
+  }
+
+
   
 
 }

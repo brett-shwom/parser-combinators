@@ -34,6 +34,9 @@ object CaseClassToKeypathMapMacro {
     val keyValuePairs = buildMapKeypathTreePairs[T](c)(q"x")
                           .map {  case (keypath, tree) => q"""${keypath} -> ($x => ${tree}.${narrowingFunctionTermName})"""  }
 
+
+    println(keyValuePairs)
+
     q"Map.apply(..${keyValuePairs})"
 
 
@@ -96,8 +99,10 @@ object CaseClassToKeypathMapMacro {
         }
 
       } else if ( //TODO: grossness...maybe we should just check of its a weak type of any of the types declared in a certain package?
-           _type <:< weakTypeOf[AnyVal] 
+                  //or maybe check to see if its a Comparable (where Comparable is passed as a parameter)? hmm....
+           _type <:< weakTypeOf[AnyVal] //TODO: AnyVal isnt right...
         || _type <:< weakTypeOf[String]
+        //|| _type <:< weakTypeOf[BigInt] //TODO: we really need to implement the above TODO, because at this point, unsupported types will just silently fail (i.e. they will pass thru to the below else which will just create an empty list...)
         || _type <:< weakTypeOf[Seq[_]]
         ) {
         Seq((keypath, tree))

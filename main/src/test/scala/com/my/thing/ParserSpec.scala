@@ -92,7 +92,20 @@ class ParserSpec extends FlatSpec with Matchers {
   }
 
 
-  
+  "The parser" should "handle nested keypaths" in {
+
+    val a = A("str", Seq(1), B("1"))
+
+    val evaluator1 = Parser.parse("equals('f3.f1', '1')").get
+
+    evaluator1(a) should equal(true)
+
+    val evaluator2 = Parser.parse("equals('f3.f1', 'otherStr')").get
+
+    evaluator2(a) should equal(false)
+
+
+  }  
 
 }
 
