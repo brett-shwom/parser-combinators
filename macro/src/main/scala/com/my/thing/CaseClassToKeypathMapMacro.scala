@@ -9,33 +9,39 @@ object CaseClassToKeypathMapMacro {
 
   type Keypath = Seq[String]
 
-  //def buildWideMap[T](f : Any) : Map[String, Any] = macro buildWideMapImpl[T]
+  //def buildWideMap[T](f : Any) : Map[String, (T => Any)] = macro buildWideMapImpl[T]
   def apply[T](f : Any) : Map[String, Any] = macro buildWideMapImpl[T]
 
-  def buildNarrowMap[T,R](f : Any, narrowingFunctionIdentifier : String) : Map[String,R] = macro buildNarrowMapImpl[T,R]
+  def buildNarrowAndFunctionizedMap[T,R](narrowingFunctionIdentifier : String) : Map[String,(T => R)] = macro buildNarrowAndFunctionizedMapImpl[T,R]
 
-  def buildNarrowMapImpl[T: c.WeakTypeTag, R:c.WeakTypeTag](c : Context)(f: c.Tree, narrowingFunctionIdentifier : c.Tree)  
+  def buildNarrowAndFunctionizedMapImpl[T: c.WeakTypeTag, R:c.WeakTypeTag](c : Context)(narrowingFunctionIdentifier : c.Tree)  
     = {
-    
+
     import c.universe._
 
     //TODO: I could replace this with TermName(someString) if I knew how to pass a String (not a Tree) to a macro method...
+    //      I should replace it because the match statement only matches a pretty restrive AST 
 
     val narrowingFunctionTermName = narrowingFunctionIdentifier match { //TODO: how can I do this with quasiquote unlifting?
-      case Ident(termName@TermName(x)) => termName
+      case Ident(termName@TermName(_)) => termName
       case _ => c.abort(c.enclosingPosition, "Not an Ident(TermName())")
     }
 
-    val keyValuePairs = buildMapKeypathTreePairs[T](c)(f)
-                          .map {  case (keypath, tree) => q"""${keypath} -> ${tree}.${narrowingFunctionTermName}"""  }
+    val ttype = weakTypeOf[T]
+
+    val x = q"val x: $ttype"
+
+    val keyValuePairs = buildMapKeypathTreePairs[T](c)(q"x")
+                          .map {  case (keypath, tree) => q"""${keypath} -> ($x => ${tree}.${narrowingFunctionTermName})"""  }
 
     q"Map.apply(..${keyValuePairs})"
 
 
   }
 
-  def buildWideMapImpl[T: c.WeakTypeTag](c : Context)(f: c.Tree) = {
+  def buildWideMapImpl[T: c.WeakTypeTag](c : Context)(f : c.Tree) = {
     import c.universe._
+
 
     val keyValuePairs = buildMapKeypathTreePairs[T](c)(f)
                           .map {  case (keypath, tree) => q"""${keypath} -> ${tree}"""}
@@ -47,7 +53,7 @@ object CaseClassToKeypathMapMacro {
   def buildMapKeypathTreePairs[T: c.WeakTypeTag](c : Context)(f: c.Tree)  = {
     import c.universe._
 
-    def explore(
+    def exploreType(
       tree    : c.Tree, 
       _type   : Type, //TODO: is there a way to remove this `_type` parameter and instead get the type it by calling some method on `f`? ... maybe this makes no sense?
       keypath : Seq[String] = Seq()
@@ -64,7 +70,7 @@ object CaseClassToKeypathMapMacro {
 
         val x = q"val x: $optionInnerType"
 
-        val subtreesAndKeypaths = explore(q"x",optionInnerType, keypath )
+        val subtreesAndKeypaths = exploreType(q"x",optionInnerType, keypath )
 
         subtreesAndKeypaths.map { case (subtreeKeypath, subtree) =>
 
@@ -99,7 +105,7 @@ object CaseClassToKeypathMapMacro {
       else {
         val subtrees = _type.decls.collect {
           case field if field.isMethod && field.asMethod.isCaseAccessor => {
-            explore(
+            exploreType(
               q"${tree}.${field}", 
               field.asMethod.returnType, 
               keypath :+ field.name.decodedName.toString
@@ -112,7 +118,7 @@ object CaseClassToKeypathMapMacro {
       }
     }
 
-    val keypathsAndFields = explore(f, weakTypeOf[T])
+    val keypathsAndFields = exploreType(f, weakTypeOf[T])
 
     val keypathTreePairs = keypathsAndFields
                           .map {  case (keypath, tree) => (keypath.mkString("."), tree) }

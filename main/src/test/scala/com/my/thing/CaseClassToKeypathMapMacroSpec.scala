@@ -200,8 +200,9 @@ class CaseClassToKeypathMapMacroSpec extends WordSpec with Matchers {
 
         val a = A(1, false)
 
-        CaseClassToKeypathMapMacro
-          .buildNarrowMap[A, String](a, toString) should equal (
+
+        CaseClassToKeypathMapMacro 
+          .buildNarrowAndFunctionizedMap[A, String](toString).map{case (keypath, getter) => (keypath, getter(a))} should equal (
             Map(
               "anInt" -> anInt.toString,
               "aBoolean" -> aBoolean.toString
